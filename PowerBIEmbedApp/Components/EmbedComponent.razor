@@ -1,0 +1,213 @@
+﻿@* This is the component that embeds the report. Takes report and access token as parameters *@
+@using Microsoft.Extensions.Configuration
+@using MongoDB.Bson
+@using PowerBIEmbedApp.Data
+@using PowerBIEmbedApp.Controllers
+@using PowerBIEmbedApp.Models
+@using PowerBIEmbedApp.Models.PowerBiModels
+@inject IJSRuntime JS
+@inject PowerBIService powerBIService
+@inject GroupingItemController groupingItemController
+@inject SubgroupingController subgroupingController
+@inject GroupingController groupingController
+@implements IHandleEvent
+
+<div class="outer-div">
+    @if (Report != null)
+    {
+        <strong style="font-size:24px">@Report.Name</strong>
+    }
+    <div id="toolbar">
+        <button class="btn btn-primary" type="button" @onclick="HandleClickUpdateGroupings">Update Groupings</button>
+        <button class="btn btn-danger" type="button" @onclick="HandleClickClose"><span class="oi oi-x"></span></button>
+    </div>
+    <div @ref="@PowerBIElement" style="width:100%;height:600px;max-width: 2000px;display:none;" />
+    <div @ref="@SpinnerElement" style="width:100%;height:600px;max-width: 2000px;display:none;">
+        <div class="d-flex justify-content-center align-items-center" style="height:600px">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Show errors to the user -->
+    <div id="error-container">
+    </div>
+</div>
+
+@* Modal Dialog that pops up when user clicks "Update Groupings" button *@
+<ModalDialog @ref="@UpdateGroupingsModalDialog" Title=@UpdateGroupingsModalTitle>
+    <div class="row">
+        <form @onsubmit="UpdateReportGroupings">
+            @foreach (Grouping grouping in groupingController.Groupings)
+            {
+                <strong>@grouping.Name</strong>
+                @foreach (Subgrouping subgrouping in subgroupingController.Subgroupings)
+                {
+                    if (grouping.SubgroupingIds != null && grouping.SubgroupingIds.Contains(subgrouping.Id))
+                    {
+                        if (this.currentSubgroupings.Contains(subgrouping))
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" @key="subgrouping.Id" @onchange="() => HandleChangeGroupingsCheckbox(subgrouping)" id="subgroupingCheckbox" checked>
+                                <label class="form-check-label" for="subgroupingCheckbox">
+                                    @subgrouping.Name
+                                </label>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" @key="subgrouping.Id" @onchange="() => HandleChangeGroupingsCheckbox(subgrouping)" id="subgroupingCheckbox">
+                                <label class="form-check-label" for="subgroupingCheckbox">
+                                    @subgrouping.Name
+                                </label>
+                            </div>
+                        }
+                    }
+                }
+                <br />
+            }
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</ModalDialog>
+
+@code {
+    [Parameter]
+    public PowerBIReport Report { get; set; }
+
+    [Parameter]
+    public AuthDetails AuthDetails { get; set; }
+
+    private ElementReference PowerBIElement;
+    private ElementReference SpinnerElement;
+
+    // List of subgroupings that report is currently a part of
+    private List<Subgrouping>? currentSubgroupings = new List<Subgrouping>();
+    // GroupingItem instance that is for the current report
+    private GroupingItem? currentGroupingItem;
+
+    private ModalDialog? UpdateGroupingsModalDialog;
+    private string? UpdateGroupingsModalTitle;
+
+    // When parameters are set, embed the report if they are both present
+    protected override async Task OnParametersSetAsync()
+    {
+        if (this.Report != null && this.AuthDetails != null)
+        {
+            await Interop.EmbedReport(JS, this.Report.EmbedUrl, this.AuthDetails.AccessToken, this.PowerBIElement, this.SpinnerElement);
+        }
+    }
+
+    // To prevent a re-render on every event, e.g. if a checkbox is checked/unchecked, don't want to re-render report every time
+    Task IHandleEvent.HandleEventAsync(
+        EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+
+    // Method for closing the report
+    public void HandleClickClose()
+    {
+        powerBIService.SetEmbeddedReport(null);
+    }
+
+    // Method for handling a click on "Update Groupings". Will open a modal dialog with all current subgroupings checked.
+    public async void HandleClickUpdateGroupings()
+    {
+        // Set initial values
+        bool isExistingItem = false;
+        this.currentSubgroupings = new List<Subgrouping>();
+
+        // Loop through each grouping item to find the current one
+        foreach (GroupingItem groupingItem in groupingItemController.GroupingItems)
+        {
+            // If grouping item is for the current report, set isExistingItem and currentGroupingItem
+            if (powerBIService.EmbeddedReport.Id == groupingItem.PowerBiId)
+            {
+                isExistingItem = true;
+                this.currentGroupingItem = groupingItem;
+
+                // Loop through each subgrouping to see which ones contain the current grouping item
+                foreach (Subgrouping subgrouping in subgroupingController.Subgroupings)
+                {
+                    // If it contains the item, then add to currentSubgroupings
+                    if (subgrouping.GroupingItems.Contains(groupingItem.Id))
+                    {
+                        this.currentSubgroupings.Add(subgrouping);
+                    }
+
+                }
+            }
+        }
+
+        // If item doesn't exist yet, then create new one and add to database
+        if (!isExistingItem)
+        {
+            this.currentGroupingItem = new GroupingItem(powerBIService.EmbeddedReport.Id, powerBIService.EmbeddedReport.Name, Enums.ItemType.Report);
+            await groupingItemController.AddGroupingItem(this.currentGroupingItem);
+        }
+
+        // Show the form, subgroupings that are in currentSubgroupings should be checked
+        this.UpdateGroupingsModalTitle = $"Update Groupings - {this.currentGroupingItem.Name}";
+        this.UpdateGroupingsModalDialog.Open();
+        StateHasChanged(); // trigger re-render to show open modal dialog
+    }
+
+    // Method for handling a change to a checkbox in the "Update Grouping" modal
+    public void HandleChangeGroupingsCheckbox(Subgrouping subgrouping)
+    {
+        // Remove from current subgroupings if it is there
+        if (this.currentSubgroupings.Contains(subgrouping))
+        {
+            this.currentSubgroupings.Remove(subgrouping);
+        }
+        // Add to current subgroupings if its not there
+        else
+        {
+            this.currentSubgroupings.Add(subgrouping);
+        }
+    }
+
+    // Method to actually update the groupings of a report
+    public void UpdateReportGroupings()
+    {
+        // Loop through each subgrouping
+        foreach (Subgrouping subgrouping in subgroupingController.Subgroupings)
+        {
+            // Get subgroupings current items as a list
+            List<ObjectId> groupingItemIds = subgrouping.GroupingItems.ToList<ObjectId>();
+
+            // If subgrouping in current subs...
+            if (this.currentSubgroupings.Contains(subgrouping))
+            {
+                // If grouping item NOT in sub, then add it
+                if (!groupingItemIds.Contains(this.currentGroupingItem.Id))
+                {
+                    groupingItemIds.Add(this.currentGroupingItem.Id);
+                }
+            }
+            // If subgrouping not in current subs...
+            else
+            {
+                // If grouping item IN sub, then remove it
+                if (groupingItemIds.Contains(this.currentGroupingItem.Id))
+                {
+                    groupingItemIds.Remove(this.currentGroupingItem.Id);
+                }
+            }
+
+            // Set subgrouping's grouping items
+            subgrouping.GroupingItems = groupingItemIds.ToArray<ObjectId>();
+
+            // Update subgrouping in database
+            subgroupingController.UpdateSubgrouping(subgrouping);
+        }
+
+        // Close the modal dialog
+        this.UpdateGroupingsModalDialog.Close();
+        StateHasChanged(); // trigger re-render to show modal closed
+
+        // Reset values
+        this.currentGroupingItem = null;
+        this.currentSubgroupings = new List<Subgrouping>();
+    }
+}

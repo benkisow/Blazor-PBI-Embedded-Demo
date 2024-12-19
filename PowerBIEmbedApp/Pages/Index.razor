@@ -1,0 +1,175 @@
+﻿@page "/"
+@using MongoDB.Bson;
+@using MongoDB.Driver;
+@using PowerBIEmbedApp.Controllers
+@using PowerBIEmbedApp.Models
+@using PowerBIEmbedApp.Models.PowerBiModels
+@using PowerBIEmbedApp.Data
+@using PowerBIEmbedApp.Components
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor httpContextAccessor
+@inject PowerBIService powerBIService
+@inject GroupingController GroupingController
+@inject SubgroupingController subgroupingController
+@inject GroupingItemController groupingItemController
+@implements IDisposable
+@attribute [Authorize]
+
+<PageTitle>Index</PageTitle>
+
+@if (powerBIService.AuthDetails == null)
+{
+    <p>Authorizing...</p>
+} else
+{
+    if (powerBIService.EmbeddedReport == null)
+    {
+        <h3>Your Groupings</h3>
+        @foreach (Grouping grouping in GroupingController.Groupings)
+        {
+            <div class="home-page-section">
+                <span class="oi @grouping.Icon" aria-hidden="true" style="font-size:28px"></span><span class="home-page-header">@grouping.Name</span>
+                @foreach (Subgrouping subgrouping in subgroupingController.Subgroupings)
+                {
+                    @if (grouping.SubgroupingIds != null && grouping.SubgroupingIds.Contains(subgrouping.Id))
+                    {
+                        <span class="home-page-sub-header"><strong>@subgrouping.Name</strong></span>
+                        @foreach (var groupingItem in groupingItemController.GroupingItems)
+                        {
+                            if (subgrouping.GroupingItems != null && subgrouping.GroupingItems.Contains(groupingItem.Id))
+                            {
+                                <span class="home-page-item" @onclick="() => HandleClickGroupingItem(groupingItem)">@groupingItem.Name</span>
+                            }
+                        }
+                    }
+                }
+            </div>   
+        }
+
+        <br/>
+        <h3>Your Workspaces</h3>
+
+        @if (workspaces != null)
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var workspace in workspaces)
+                    {
+                        <tr>
+                            <td>@workspace.Name</td>
+                            <td><button type="button" class="btn btn-primary" @onclick="() => GetReportsInGroup(workspace)">Get Reports in Workspace</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (reports != null && currentWorkspace != null)
+        {
+            <div class="home-page-section">
+                <span class="home-page-sub-header">Reports in <strong>@currentWorkspace.Name</strong></span>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var report in reports)
+                        {
+                            <tr>
+                                <td>@report.Name</td>
+                                <td><button type="button" class="btn btn-primary" @onclick="() => EmbedReport(report)">View</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+    <div id="embed-container" style="display: @embedContainerDisplay">
+        <EmbedComponent Report=powerBIService.EmbeddedReport AuthDetails="powerBIService.AuthDetails" />
+    </div>  
+}
+
+@code {
+    private PowerBIWorkspace[]? workspaces;
+    private PowerBIReport[]? reports;
+
+    private PowerBIWorkspace currentWorkspace;
+
+    private string embedContainerDisplay => powerBIService.EmbeddedReport == null ? "none" : "block";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetWorkspaces();
+    }
+
+    // Method to embed report when it's selected
+    public void EmbedReport(PowerBIReport report)
+    {
+        powerBIService.EmbeddedReport = report;
+    }
+
+    // Method to re-render page when auth details change
+    void OnAuthDetailsStateChanged(object sender, EventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    // Method to re-render page when current embedded report changes
+    void OnEmbeddedReportStateChanged(object sender, EventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        // Attach state change events to methods for re-rendering
+        powerBIService.AuthDetailsStateChangedHandler += OnAuthDetailsStateChanged;
+        powerBIService.EmbeddedReportStateChangedHandler += OnEmbeddedReportStateChanged;
+    }
+
+    void IDisposable.Dispose() // disposing to avoid memory leaks
+    {
+        // Detach state change events to methods for re-rendering
+        powerBIService.AuthDetailsStateChangedHandler -= OnAuthDetailsStateChanged;
+        powerBIService.EmbeddedReportStateChangedHandler -= OnEmbeddedReportStateChanged;
+    }
+
+    // Method for getting all workspaces
+    public async Task GetWorkspaces()
+    {
+        workspaces = await powerBIService.GetWorkspacesAsync();
+    }
+
+    // Method for getting all reports
+    public async Task GetReports()
+    {
+        reports = await powerBIService.GetReportsAsync();
+    }
+
+    // Methods for getting all reports from a specific workspace
+    public async Task GetReportsInGroup(PowerBIWorkspace workspace)
+    {
+        this.currentWorkspace = workspace;
+        string groupId = workspace.Id;
+        reports = await powerBIService.GetReportsInGroupAsync(groupId);
+    }
+
+    // Method to handle clicking on a grouping item - will embed the report
+    private void HandleClickGroupingItem(GroupingItem groupingItem)
+    {
+        if (groupingItem.ItemType == Enums.ItemType.Report)
+        {
+            powerBIService.SetEmbeddedReport(groupingItem.PowerBiId);
+        }
+    }
+}

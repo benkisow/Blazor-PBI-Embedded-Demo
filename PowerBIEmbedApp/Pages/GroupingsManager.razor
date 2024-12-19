@@ -1,0 +1,305 @@
+﻿@page "/groupings-manager"
+
+@using MongoDB.Bson;
+@using PowerBIEmbedApp.Controllers
+@using PowerBIEmbedApp.Models
+@using PowerBIEmbedApp.Shared
+@inject GroupingController groupingController
+@inject SubgroupingController subgroupingController
+
+<PageTitle>Groupings Manager</PageTitle>
+
+<h3>Groupings Manager</h3>
+
+<button class="btn btn-primary" @onclick="HandleClickAddGrouping">Add Grouping</button>
+
+@* Modal Dialog that pops up for adding a new grouping or editing an existing one *@
+<ModalDialog @ref="@GroupingModalDialog" Title="@ModalTitle">
+    <div class="row">
+        <form @onsubmit="HandleSubmit">
+            <div class="form-group">
+                <label for="name">NAME</label>
+                <input type="text" class="form-control" id="name" placeholder="Grouping name (Ex: Sales)" value="@Name" @oninput="(e) => Name = e.Value.ToString()">
+            </div>
+            <br/>
+            <div class="form-group">
+                <label for="icon">ICON</label>
+                <input type="text" class="form-control" id="icon" placeholder="Grouping icon (Ex: oi-dollar)" value="@Icon" @oninput="(e) => Icon = e.Value.ToString()">
+                <small id="iconHelp" class="form-text text-muted">Preview: </small><span class="oi @Icon" aria-hidden="true"></span>
+            </div>
+            <br/>
+            <div class="form-group">
+                <label for="subgroupings">SUBGROUPINGS</label>
+                <table class="table">
+                    <tbody>
+                        @foreach (var subgrouping in this.Subgroupings.OrderBy(s => s.Name).ToList<Subgrouping>())
+                        {
+                            <tr>
+                                @if (subgrouping.Id == EditedSubgroupingId)
+                                {
+                                    <td><input type="text" class="form-control form-control-sm" id="editSubgrouping" value="@EditedSubgroupingName" @oninput="(e) => EditedSubgroupingName = e.Value.ToString()"></td>
+                                    <td><button type="button" class="btn btn-primary" @onclick="() => SoftUpdateSubgrouping(subgrouping.Id)">Save</button></td>
+                                    <td><button type="button" class="btn btn-danger" @onclick="() => {EditedSubgroupingId=null;EditedSubgroupingName=null;}">Cancel</button></td>
+                                } else
+                                {
+                                    <td>@subgrouping.Name</td>
+                                    <td><button type="button" class="btn btn-primary" @onclick="() => HandleClickEditSubgrouping(subgrouping)">Edit</button></td>
+                                    <td><button type="button" class="btn btn-danger" @onclick="() => SoftDeleteSubgrouping(subgrouping.Id)">Delete</button></td>
+                                }
+                            </tr>
+                        }
+                        <tr>
+                            <td><input type="text" class="form-control form-control-sm" id="subgroupings" placeholder="Subgrouping name (Ex: Operations)" value="@NewSubgroupingName" @oninput="(e) => NewSubgroupingName = e.Value.ToString()"></td>
+                            <td colspan="2"><button type="button" class="btn btn-primary" @onclick="AddSubgrouping">Add Subgrouping</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</ModalDialog>
+
+@* Table that shows all existing groupings *@
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Icon</th>
+            <th>Subgroupings</th>
+            <th></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var grouping in groupingController.Groupings)
+        {
+            <tr>
+                <td>@grouping.Name</td>
+                <td><span class="oi @grouping.Icon" aria-hidden="true"></span> @grouping.Icon</td>
+                <td>
+                    @foreach (var subgrouping in subgroupingController.Subgroupings)
+                    {
+                        if (grouping.SubgroupingIds != null && grouping.SubgroupingIds.Contains(subgrouping.Id))
+                        {
+                            <p>@subgrouping.Name</p>
+                        }
+                    }
+                </td>
+                <td><button class="btn btn-primary" @onclick="() => HandleClickEditGrouping(grouping)">Edit</button></td>
+                <td><button class="btn btn-danger" @onclick="() => DeleteGrouping(grouping.Id)">Delete</button></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private ModalDialog? GroupingModalDialog;
+    private string? ModalTitle;
+
+    // For tracking deleted subgroupings while editing
+    private List<ObjectId>? DeletedSubgroupingIds;
+
+    // Local variables used for editing a grouping - will be populated with current values
+    private ObjectId? Id;
+    private string? Name;
+    private string? Icon;
+    private List<Subgrouping>? Subgroupings = new List<Subgrouping>();
+
+    // Field for tracking the name of a new subgrouping while it's being added
+    private string? NewSubgroupingName;
+
+    // Fields for tracking a subgrouping while it is being edited
+    private ObjectId? EditedSubgroupingId;
+    private string? EditedSubgroupingName;
+
+    // Method for handling a click to "Add Grouping"
+    public void HandleClickAddGrouping()
+    {
+        // Set initial values
+        this.Id = null;
+        this.Name = null;
+        this.Icon = null;
+        this.Subgroupings = new List<Subgrouping>();
+        this.DeletedSubgroupingIds = new List<ObjectId>();
+
+        // Open modal dialog
+        this.ModalTitle = "Add Grouping";
+        this.GroupingModalDialog.Open();
+    }
+
+    // Method for handling a click to "Edit" on a grouping
+    public void HandleClickEditGrouping(Grouping grouping)
+    {
+        // Set initial values
+        this.Id = grouping.Id;
+        this.Name = grouping.Name;
+        this.Icon = grouping.Icon;
+        this.Subgroupings = new List<Subgrouping>();
+        foreach (Subgrouping subgrouping in subgroupingController.Subgroupings)
+        {
+            if (grouping.SubgroupingIds.Contains(subgrouping.Id))
+            {
+                this.Subgroupings.Add(subgrouping);
+            }
+        }
+        this.DeletedSubgroupingIds = new List<ObjectId>();
+
+        // Open modal dialog
+        this.ModalTitle = $"Edit Grouping - {grouping.Name}";
+        this.GroupingModalDialog.Open();
+    }
+
+    // Method for handling a click to "Edit" on a subgrouping
+    public void HandleClickEditSubgrouping(Subgrouping subgrouping)
+    {
+        // Set initial values
+        this.EditedSubgroupingId = subgrouping.Id;
+        this.EditedSubgroupingName = subgrouping.Name;
+    }
+
+    // Method for submitting the form to add or edit a grouping
+    public async void HandleSubmit()
+    {
+        // Based on the title of the modal, either run AddGrouping or UpdateGrouping
+        if (this.ModalTitle == "Add Grouping")
+        {
+            await AddGrouping();
+        }
+        else if (this.ModalTitle.StartsWith("Edit Grouping"))
+        {
+            await UpdateGrouping(Id);
+        }
+
+        // Close the modal dialog
+        this.GroupingModalDialog.Close();
+
+        // Reset values
+        this.Id = null;
+        this.Name = null;
+        this.Icon = null;
+        this.Subgroupings = new List<Subgrouping>();
+        this.DeletedSubgroupingIds = null;
+        this.EditedSubgroupingId = null;
+        this.EditedSubgroupingName = null;
+    }
+
+    // Method for actually adding a new grouping
+    public async Task AddGrouping()
+    {
+        // Put together a list of all subgroupings in the new grouping
+        List<ObjectId>? subgroupingIds = new List<ObjectId>();
+
+        foreach (Subgrouping subgrouping in this.Subgroupings)
+        {
+            subgroupingIds.Add(subgrouping.Id);
+        }
+
+        // Create new instance of grouping class
+        Grouping grouping = new Grouping(this.Name, this.Icon, subgroupingIds.ToArray<ObjectId>());
+
+        // Add grouping to the database
+        await groupingController.AddGrouping(grouping);
+
+        Console.WriteLine($"Grouping added: {grouping.Id.ToString()}");
+
+        // Delete any deleted subgroupings
+        foreach (ObjectId deletedSubgroupingId in this.DeletedSubgroupingIds)
+        {
+            await HardDeleteSubgrouping(deletedSubgroupingId);
+        }
+    }
+
+    // Method for actually updating an existing grouping
+    public async Task UpdateGrouping(ObjectId? id)
+    {
+        // Get the grouping object to update
+        Grouping grouping = groupingController.Groupings.Where(g => g.Id == id).ToList()[0];
+
+        // Put together a list of all subgroupings in the current grouping
+        List<ObjectId>? subgroupingIds = new List<ObjectId>();
+
+        foreach (Subgrouping subgrouping in this.Subgroupings)
+        {
+            subgroupingIds.Add(subgrouping.Id);
+        }
+
+        // Update the values
+        grouping.Name = this.Name;
+        grouping.Icon = this.Icon;
+        grouping.SubgroupingIds = subgroupingIds.ToArray<ObjectId>();
+
+        // Update grouping in database
+        groupingController.UpdateGrouping(grouping);
+
+        // Delete any deleted subgroupings
+        foreach (ObjectId deletedSubgroupingId in this.DeletedSubgroupingIds)
+        {
+            await HardDeleteSubgrouping(deletedSubgroupingId);
+        }
+    }
+
+    // Method for deleting a grouping
+    public async Task DeleteGrouping(ObjectId id)
+    {
+        // Find the grouping to delete
+        Grouping grouping = groupingController.Groupings.Where(g => g.Id == id).ToList()[0];
+
+        // Delete all subgroupings from this grouping
+        foreach (ObjectId subgroupingId in grouping.SubgroupingIds)
+        {
+            HardDeleteSubgrouping(subgroupingId);
+        }
+
+        // Delete grouping from database
+        await groupingController.DeleteGrouping(id);
+    }
+
+    // Method to actually add a new subgrouping
+    public async Task AddSubgrouping()
+    {
+        // Create new instance of subgrouping class
+        Subgrouping subgrouping = new Subgrouping(NewSubgroupingName);
+
+        // Add subgrouping to the database
+        await subgroupingController.AddSubgrouping(subgrouping);
+
+        // Add subgrouping to the grouping that is being edited
+        this.Subgroupings.Add(subgrouping);
+        this.Subgroupings.OrderBy(s => s.Name).ToList();
+
+        // Reset values
+        this.NewSubgroupingName = null;
+    }
+
+    // Method to "soft delete" a subgrouping. Don't want to actually delete while editing, in case changes aren't saved
+    public void SoftDeleteSubgrouping(ObjectId id)
+    {
+        // Add to DeletedSubgroupingIds
+        this.DeletedSubgroupingIds.Add(id);
+
+        // Remove from grouping that is being edited
+        this.Subgroupings.RemoveAll(s => s.Id == id);
+    }
+
+    // Method to actually delete a subgrouping
+    public async Task HardDeleteSubgrouping(ObjectId id)
+    {
+        // Delete grouping from database
+        await subgroupingController.DeleteSubgrouping(id);
+    }
+
+    // Method to "soft update" a subgrouping. Don't want to actually update while editing, in case changes aren't saved
+    public void SoftUpdateSubgrouping(ObjectId id)
+    {
+        // Update subgrouping on this page
+        Subgrouping editedSubgrouping = this.Subgroupings.Where(s => s.Id == id).ToList<Subgrouping>()[0];
+        editedSubgrouping.Name = this.EditedSubgroupingName;
+
+        this.Subgroupings.OrderBy(s => s.Name).ToList();
+
+        // Reset values
+        this.EditedSubgroupingId = null;
+        this.EditedSubgroupingName = null;
+    }
+}

@@ -1,0 +1,56 @@
+﻿@* This is the component for displaying groupings in the Nav menu. Takes a grouping as a parameter. *@
+@using MongoDB.Bson;
+@using PowerBIEmbedApp.Models;
+@using PowerBIEmbedApp.Controllers;
+@using PowerBIEmbedApp.Data;
+@inject SubgroupingController subgroupingController;
+@inject GroupingItemController groupingItemController;
+@inject PowerBIService powerBiService;
+
+<div class="nav-item px-3 @NavGroupingCssClass" @onmouseover="() => HandleMouseoverGrouping(grouping.Id)" @onmouseout="() => this.focusedGroupingId = null">
+    <div class="nav-link" style="color: white">
+        <span class="oi @grouping.Icon" aria-hidden="true"></span> @grouping.Name
+        @if (focusedGroupingId == grouping.Id)
+        {
+            @foreach (var subgrouping in subgroupingController.Subgroupings)
+            {
+                if (grouping.SubgroupingIds != null && grouping.SubgroupingIds.Contains(subgrouping.Id))
+                {
+                    <p class="subgrouping-name"><strong>@subgrouping.Name</strong></p>
+                    @foreach (var groupingItem in groupingItemController.GroupingItems)
+                    {
+                        if (subgrouping.GroupingItems != null && subgrouping.GroupingItems.Contains(groupingItem.Id))
+                        {
+                            <p class="grouping-item-name" @onclick="() => HandleClickGroupingItem(groupingItem)">@groupingItem.Name</p>
+                        }
+                    }
+                }
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Grouping grouping { get; set; }
+
+    // The grouping (if any) that has the mouse hovering over it
+    private ObjectId? focusedGroupingId;
+
+    private string? NavGroupingCssClass => this.focusedGroupingId == this.grouping.Id ? "focused-grouping" : null;
+
+    // Method for setting focusedGroupingId when hovering over a grouping
+    private void HandleMouseoverGrouping(ObjectId id)
+    {
+        focusedGroupingId = id;
+    }
+
+    // Method for embedding a report when you click on it
+    private void HandleClickGroupingItem(GroupingItem groupingItem)
+    {
+        if (groupingItem.ItemType == Enums.ItemType.Report)
+        {
+            powerBiService.SetEmbeddedReport(groupingItem.PowerBiId);
+        }
+    }
+}

@@ -1,0 +1,117 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\obj\\Debug\\net7.0\\scopedcss\\projectbundle\\PowerBIEmbedApp.bundle.scp.css",
+      "PackagePath": "staticwebassets\\PowerBIEmbedApp.bundle.scp.css"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\bootstrap\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\css\\bootstrap\\bootstrap.min.css"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\bootstrap\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\css\\bootstrap\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\open-iconic\\FONT-LICENSE",
+      "PackagePath": "staticwebassets\\css\\open-iconic"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\open-iconic\\ICON-LICENSE",
+      "PackagePath": "staticwebassets\\css\\open-iconic"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\open-iconic\\README.md",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\README.md"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\open-iconic\\font\\css\\open-iconic-bootstrap.min.css",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\css\\open-iconic-bootstrap.min.css"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.eot",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.eot"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.otf",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.otf"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.svg",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.svg"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.ttf",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.ttf"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\open-iconic\\font\\fonts\\open-iconic.woff",
+      "PackagePath": "staticwebassets\\css\\open-iconic\\font\\fonts\\open-iconic.woff"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\css\\site.css",
+      "PackagePath": "staticwebassets\\css\\site.css"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\favicon.png",
+      "PackagePath": "staticwebassets\\favicon.png"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\img\\spinner.svg",
+      "PackagePath": "staticwebassets\\img\\spinner.svg"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\js\\embed.js",
+      "PackagePath": "staticwebassets\\js\\embed.js"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\js\\error.js",
+      "PackagePath": "staticwebassets\\js\\error.js"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\js\\globals.js",
+      "PackagePath": "staticwebassets\\js\\globals.js"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\js\\namespace.js",
+      "PackagePath": "staticwebassets\\js\\namespace.js"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\lib\\jquery\\LICENSE.txt",
+      "PackagePath": "staticwebassets\\lib\\jquery\\LICENSE.txt"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\lib\\jquery\\dist\\jquery.min.js",
+      "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.min.js"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\lib\\jquery\\dist\\jquery.min.map",
+      "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.min.map"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\lib\\powerbi-client\\LICENSE.txt",
+      "PackagePath": "staticwebassets\\lib\\powerbi-client\\LICENSE.txt"
+    },
+    {
+      "Id": "C:\\repos\\PowerBIEmbedded\\PowerBIEmbedApp\\wwwroot\\lib\\powerbi-client\\dist\\powerbi.min.js",
+      "PackagePath": "staticwebassets\\lib\\powerbi-client\\dist\\powerbi.min.js"
+    },
+    {
+      "Id": "obj\\Debug\\net7.0\\staticwebassets\\msbuild.PowerBIEmbedApp.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net7.0\\staticwebassets\\msbuild.build.PowerBIEmbedApp.props",
+      "PackagePath": "build\\PowerBIEmbedApp.props"
+    },
+    {
+      "Id": "obj\\Debug\\net7.0\\staticwebassets\\msbuild.buildMultiTargeting.PowerBIEmbedApp.props",
+      "PackagePath": "buildMultiTargeting\\PowerBIEmbedApp.props"
+    },
+    {
+      "Id": "obj\\Debug\\net7.0\\staticwebassets\\msbuild.buildTransitive.PowerBIEmbedApp.props",
+      "PackagePath": "buildTransitive\\PowerBIEmbedApp.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

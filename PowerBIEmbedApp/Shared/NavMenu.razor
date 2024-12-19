@@ -1,0 +1,64 @@
+﻿@using MongoDB.Bson;
+@using PowerBIEmbedApp.Controllers
+@using PowerBIEmbedApp.Models
+@using PowerBIEmbedApp.Shared
+@using PowerBIEmbedApp.Components
+@inject GroupingController groupingController
+@implements IDisposable
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Baker Tilly</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="groupings-manager">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> Groupings Manager
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <span style="color: lightgray">Your Groupings</span>
+        </div>
+        @foreach (var grouping in groupingController.Groupings)
+        {
+            <NavGrouping grouping="grouping"/>
+        }
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    void OnGroupingsStateChanged(object sender, EventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        groupingController.StateChangedHandler += OnGroupingsStateChanged;
+    }
+
+    void IDisposable.Dispose() // disposing to avoid memory leaks
+    {
+        groupingController.StateChangedHandler -= OnGroupingsStateChanged;
+    }
+}
